@@ -1,0 +1,24 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build release
+        run: cargo build --release
+      - name: archive build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: target/release/temppad.*
+

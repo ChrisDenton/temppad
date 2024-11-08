@@ -1,0 +1,26 @@
+[package]
+name = "temppad"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+windows-sys = { version = "0.59.0", features = [
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Graphics_Gdi",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Threading",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Controls",
+    "Win32_Storage_FileSystem",
+    "Win32_System_IO",
+] }
+
+[profile.dev]
+panic = "abort"
+opt-level = 1
+
+[profile.release]
+panic = "abort"
+lto = "thin"
+codegen-units = 1
+opt-level = 3
