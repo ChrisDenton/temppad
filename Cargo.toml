@@ -1,7 +1,9 @@
 [package]
 name = "temppad"
+description = "A temporary place to put your notes"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 
 [dependencies]
 windows-sys = { version = "0.59.0", features = [
