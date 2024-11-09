@@ -37,6 +37,9 @@ use windows_sys::Win32::{
 };
 
 const CONTROL_A: usize = 1;
+const ID_EDITCHILD: *mut c_void = 100 as *mut c_void;
+
+static EDIT_CONTROL: AtomicPtr<c_void> = AtomicPtr::new(null());
 
 #[no_mangle]
 extern "C" fn main() -> i32 {
@@ -111,9 +114,6 @@ extern "C" fn main() -> i32 {
     }
     msg.wParam as i32
 }
-
-const ID_EDITCHILD: *mut c_void = 100 as *mut c_void;
-static EDIT_CONTROL: AtomicPtr<c_void> = AtomicPtr::new(null());
 
 unsafe extern "system" fn windows_proc(
     hwnd: HWND,
