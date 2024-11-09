@@ -2,6 +2,8 @@
 
 A temporary place to put your notes. [Download here](https://github.com/ChrisDenton/temppad/releases/download/0.1.0/temppad.exe).
 
+![screenshot of Temp Pad](temppad.png?raw=true "Screenshot")
+
 Like notepad but without all the modern bells and whistles.
 It's literally just an edit box with no other features.
 
