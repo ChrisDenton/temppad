@@ -1,6 +1,6 @@
 # Temp Pad
 
-A temporary place to put your notes. [Download here](https://github.com/ChrisDenton/temppad/releases/download/0.1.0/temppad.exe).
+A temporary place to put your notes. [Download here](https://github.com/ChrisDenton/temppad/releases/download/0.1.1/temppad.exe).
 
 ![screenshot of Temp Pad](temppad.png?raw=true "Screenshot")
 
