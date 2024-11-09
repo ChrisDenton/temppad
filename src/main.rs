@@ -14,15 +14,16 @@ use core::{
 use windows_sys::Win32::{
     Foundation::{HWND, LPARAM, LRESULT, TRUE, WPARAM},
     Graphics::Gdi::{
-        CreateFontW, InflateRect, UpdateWindow, ANSI_CHARSET, CLIP_DEFAULT_PRECIS,
-        COLOR_WINDOWFRAME, DEFAULT_PITCH, DEFAULT_QUALITY, FF_DONTCARE, FW_DONTCARE, OUT_TT_PRECIS,
+        CreateFontW, GetDC, GetTextExtentPoint32W, InflateRect, ReleaseDC, UpdateWindow,
+        ANSI_CHARSET, CLIP_DEFAULT_PRECIS, COLOR_WINDOWFRAME, DEFAULT_PITCH, DEFAULT_QUALITY,
+        FF_DONTCARE, FW_DONTCARE, OUT_TT_PRECIS,
     },
     System::LibraryLoader::{
         GetModuleHandleW, LoadLibraryExW, LOAD_LIBRARY_AS_DATAFILE, LOAD_LIBRARY_AS_IMAGE_RESOURCE,
         LOAD_LIBRARY_SEARCH_SYSTEM32,
     },
     UI::{
-        Controls::{EM_SETRECT, EM_SETSEL},
+        Controls::{EM_SETRECT, EM_SETSEL, EM_SETTABSTOPS},
         Input::KeyboardAndMouse::SetFocus,
         WindowsAndMessaging::{
             CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClientRect,
@@ -144,6 +145,9 @@ unsafe extern "system" fn windows_proc(
                 GetWindowLongPtrW(hwnd, GWLP_HINSTANCE) as *mut c_void,
                 null(),
             );
+            EDIT_CONTROL.store(edit, Ordering::Release);
+
+            // Attempt to set the font to Consolas
             let font = CreateFontW(
                 16,
                 0,
@@ -161,7 +165,13 @@ unsafe extern "system" fn windows_proc(
                 windows_sys::w!("Consolas"),
             );
             SendMessageW(edit, WM_SETFONT, font as usize, TRUE as isize);
-            EDIT_CONTROL.store(edit, Ordering::Release);
+
+            // Set the tab stop to four spaces
+            let mut size = mem::zeroed();
+            let dc = GetDC(edit);
+            GetTextExtentPoint32W(dc, windows_sys::w!("    "), 4, &mut size);
+            ReleaseDC(edit, dc);
+            SendMessageW(edit, EM_SETTABSTOPS, 1, addr_of!(size.cx) as isize);
         },
         WM_SETFOCUS => unsafe {
             SetFocus(EDIT_CONTROL.load(Ordering::Acquire));
