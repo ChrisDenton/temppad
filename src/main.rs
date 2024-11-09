@@ -19,6 +19,7 @@ use windows_sys::Win32::{
     },
     System::LibraryLoader::{
         GetModuleHandleW, LoadLibraryExW, LOAD_LIBRARY_AS_DATAFILE, LOAD_LIBRARY_AS_IMAGE_RESOURCE,
+        LOAD_LIBRARY_SEARCH_SYSTEM32,
     },
     UI::{
         Controls::{EM_SETRECT, EM_SETSEL},
@@ -44,7 +45,9 @@ extern "C" fn main() -> i32 {
         LoadLibraryExW(
             windows_sys::w!("pifmgr.dll"),
             null(),
-            LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE,
+            LOAD_LIBRARY_AS_DATAFILE
+                | LOAD_LIBRARY_AS_IMAGE_RESOURCE
+                | LOAD_LIBRARY_SEARCH_SYSTEM32,
         )
     };
     let icon = unsafe {
