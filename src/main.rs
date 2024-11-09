@@ -11,28 +11,31 @@ use core::{
     ptr::{addr_of, null_mut as null},
     sync::atomic::{AtomicPtr, Ordering},
 };
-use windows_sys::Win32::{
-    Foundation::{HWND, LPARAM, LRESULT, TRUE, WPARAM},
-    Graphics::Gdi::{
-        CreateFontW, GetDC, GetTextExtentPoint32W, InflateRect, ReleaseDC, UpdateWindow,
-        ANSI_CHARSET, CLIP_DEFAULT_PRECIS, COLOR_WINDOWFRAME, DEFAULT_PITCH, DEFAULT_QUALITY,
-        FF_DONTCARE, FW_DONTCARE, OUT_TT_PRECIS,
-    },
-    System::LibraryLoader::{
-        GetModuleHandleW, LoadLibraryExW, LOAD_LIBRARY_AS_DATAFILE, LOAD_LIBRARY_AS_IMAGE_RESOURCE,
-        LOAD_LIBRARY_SEARCH_SYSTEM32,
-    },
-    UI::{
-        Controls::{EM_SETRECT, EM_SETSEL, EM_SETTABSTOPS},
-        Input::KeyboardAndMouse::SetFocus,
-        WindowsAndMessaging::{
-            CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClientRect,
-            GetMessageW, GetWindowLongPtrW, LoadCursorW, LoadImageW, MoveWindow, PostQuitMessage,
-            RegisterClassExW, SendMessageW, ShowWindow, TranslateMessage, CW_USEDEFAULT,
-            ES_AUTOHSCROLL, ES_LEFT, ES_MULTILINE, ES_NOHIDESEL, GWLP_HINSTANCE, IDC_ARROW,
-            IMAGE_ICON, LR_DEFAULTCOLOR, SW_SHOWDEFAULT, WM_CHAR, WM_CLOSE, WM_CREATE, WM_DESTROY,
-            WM_SETFOCUS, WM_SETFONT, WM_SIZE, WNDCLASSEXW, WS_CHILD, WS_EX_CLIENTEDGE, WS_HSCROLL,
-            WS_OVERLAPPEDWINDOW, WS_VISIBLE, WS_VSCROLL,
+use windows_sys::{
+    w,
+    Win32::{
+        Foundation::{HWND, LPARAM, LRESULT, TRUE, WPARAM},
+        Graphics::Gdi::{
+            CreateFontW, GetDC, GetTextExtentPoint32W, InflateRect, ReleaseDC, UpdateWindow,
+            ANSI_CHARSET, CLIP_DEFAULT_PRECIS, COLOR_WINDOWFRAME, DEFAULT_PITCH, DEFAULT_QUALITY,
+            FF_DONTCARE, FW_DONTCARE, OUT_TT_PRECIS,
+        },
+        System::LibraryLoader::{
+            GetModuleHandleW, LoadLibraryExW, LOAD_LIBRARY_AS_DATAFILE,
+            LOAD_LIBRARY_AS_IMAGE_RESOURCE, LOAD_LIBRARY_SEARCH_SYSTEM32,
+        },
+        UI::{
+            Controls::{EM_SETRECT, EM_SETSEL, EM_SETTABSTOPS},
+            Input::KeyboardAndMouse::SetFocus,
+            WindowsAndMessaging::{
+                CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClientRect,
+                GetMessageW, GetWindowLongPtrW, LoadCursorW, LoadImageW, MoveWindow,
+                PostQuitMessage, RegisterClassExW, SendMessageW, ShowWindow, TranslateMessage,
+                CW_USEDEFAULT, ES_AUTOHSCROLL, ES_LEFT, ES_MULTILINE, ES_NOHIDESEL, GWLP_HINSTANCE,
+                IDC_ARROW, IMAGE_ICON, LR_DEFAULTCOLOR, SW_SHOWDEFAULT, WM_CHAR, WM_CLOSE,
+                WM_CREATE, WM_DESTROY, WM_SETFOCUS, WM_SETFONT, WM_SIZE, WNDCLASSEXW, WS_CHILD,
+                WS_EX_CLIENTEDGE, WS_HSCROLL, WS_OVERLAPPEDWINDOW, WS_VISIBLE, WS_VSCROLL,
+            },
         },
     },
 };
@@ -47,13 +50,14 @@ extern "C" fn main() -> i32 {
     let instance = unsafe { GetModuleHandleW(core::ptr::null()) };
     let icon_lib = unsafe {
         LoadLibraryExW(
-            windows_sys::w!("pifmgr.dll"),
+            w!("pifmgr.dll"),
             null(),
             LOAD_LIBRARY_AS_DATAFILE
                 | LOAD_LIBRARY_AS_IMAGE_RESOURCE
                 | LOAD_LIBRARY_SEARCH_SYSTEM32,
         )
     };
+
     let icon = unsafe {
         LoadImageW(
             icon_lib,
@@ -75,7 +79,7 @@ extern "C" fn main() -> i32 {
         hCursor: unsafe { LoadCursorW(null(), IDC_ARROW) },
         hbrBackground: (COLOR_WINDOWFRAME) as *mut c_void,
         lpszMenuName: null(),
-        lpszClassName: windows_sys::w!("temp_pad_window_class"),
+        lpszClassName: w!("temp_pad_window_class"),
         hIconSm: icon,
     };
     let class_atom = unsafe { RegisterClassExW(&wc) };
@@ -86,7 +90,7 @@ extern "C" fn main() -> i32 {
         CreateWindowExW(
             WS_EX_CLIENTEDGE,
             class_atom as usize as *const u16,
-            windows_sys::w!("Temp Pad"),
+            w!("Temp Pad"),
             WS_OVERLAPPEDWINDOW,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -126,7 +130,7 @@ unsafe extern "system" fn windows_proc(
         WM_CREATE => unsafe {
             let edit = CreateWindowExW(
                 0,
-                windows_sys::w!("EDIT"),
+                w!("EDIT"),
                 null(),
                 WS_CHILD
                     | WS_VISIBLE
@@ -162,14 +166,14 @@ unsafe extern "system" fn windows_proc(
                 CLIP_DEFAULT_PRECIS as u32,
                 DEFAULT_QUALITY as u32,
                 (DEFAULT_PITCH | FF_DONTCARE) as u32,
-                windows_sys::w!("Consolas"),
+                w!("Consolas"),
             );
             SendMessageW(edit, WM_SETFONT, font as usize, TRUE as isize);
 
             // Set the tab stop to four spaces
             let mut size = mem::zeroed();
             let dc = GetDC(edit);
-            GetTextExtentPoint32W(dc, windows_sys::w!("    "), 4, &mut size);
+            GetTextExtentPoint32W(dc, w!("    "), 4, &mut size);
             ReleaseDC(edit, dc);
             SendMessageW(edit, EM_SETTABSTOPS, 1, addr_of!(size.cx) as isize);
         },
