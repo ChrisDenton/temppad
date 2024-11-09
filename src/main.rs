@@ -26,13 +26,15 @@ use windows_sys::{
         },
         UI::{
             Controls::{EM_SETRECT, EM_SETSEL, EM_SETTABSTOPS},
+            HiDpi::GetDpiForWindow,
             Input::KeyboardAndMouse::SetFocus,
             WindowsAndMessaging::{
                 CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClientRect,
                 GetMessageW, GetWindowLongPtrW, LoadCursorW, LoadImageW, MoveWindow,
-                PostQuitMessage, RegisterClassExW, SendMessageW, ShowWindow, TranslateMessage,
-                CW_USEDEFAULT, ES_AUTOHSCROLL, ES_LEFT, ES_MULTILINE, ES_NOHIDESEL, GWLP_HINSTANCE,
-                IDC_ARROW, IMAGE_ICON, LR_DEFAULTCOLOR, SW_SHOWDEFAULT, WM_CHAR, WM_CLOSE,
+                PostQuitMessage, RegisterClassExW, SendMessageW, SetWindowPos, ShowWindow,
+                TranslateMessage, CW_USEDEFAULT, ES_AUTOHSCROLL, ES_LEFT, ES_MULTILINE,
+                ES_NOHIDESEL, GWLP_HINSTANCE, IDC_ARROW, IMAGE_ICON, LR_DEFAULTCOLOR, SWP_NOMOVE,
+                SWP_NOZORDER, SW_SHOWDEFAULT, USER_DEFAULT_SCREEN_DPI, WM_CHAR, WM_CLOSE,
                 WM_CREATE, WM_DESTROY, WM_SETFOCUS, WM_SETFONT, WM_SIZE, WNDCLASSEXW, WS_CHILD,
                 WS_EX_CLIENTEDGE, WS_HSCROLL, WS_OVERLAPPEDWINDOW, WS_VISIBLE, WS_VSCROLL,
             },
@@ -105,6 +107,57 @@ extern "C" fn main() -> i32 {
     if hwnd.is_null() {
         return 1;
     }
+    let dpi = unsafe { f64::from(GetDpiForWindow(hwnd)) };
+    let dpi_scale = dpi / f64::from(USER_DEFAULT_SCREEN_DPI);
+
+    unsafe {
+        SetWindowPos(
+            hwnd,
+            null(),
+            0,
+            0,
+            (1000_f64 * dpi_scale) as i32,
+            (600_f64 * dpi_scale) as i32,
+            SWP_NOMOVE | SWP_NOZORDER,
+        );
+    }
+
+    unsafe {
+        let edit = EDIT_CONTROL.load(Ordering::Acquire);
+        // Attempt to set the font to Consolas
+        let font = CreateFontW(
+            (16_f64 * dpi_scale) as i32,
+            0,
+            0,
+            0,
+            FW_DONTCARE as i32,
+            false as u32,
+            false as u32,
+            false as u32,
+            ANSI_CHARSET as u32,
+            OUT_TT_PRECIS as u32,
+            CLIP_DEFAULT_PRECIS as u32,
+            DEFAULT_QUALITY as u32,
+            (DEFAULT_PITCH | FF_DONTCARE) as u32,
+            w!("Consolas"),
+        );
+        SendMessageW(edit, WM_SETFONT, font as usize, TRUE as isize);
+
+        // Set the tab stop to four spaces
+        let mut size = mem::zeroed();
+        let dc = GetDC(edit);
+        GetTextExtentPoint32W(dc, w!("    "), 4, &mut size);
+        ReleaseDC(edit, dc);
+
+        SendMessageW(edit, EM_SETTABSTOPS, 1, addr_of!(size.cx) as isize);
+
+        // Get width of a single space
+        let mut size = mem::zeroed();
+        let dc = GetDC(edit);
+        GetTextExtentPoint32W(dc, w!(" "), 1, &mut size);
+        ReleaseDC(edit, dc);
+    }
+
     unsafe { ShowWindow(hwnd, SW_SHOWDEFAULT) };
     unsafe { UpdateWindow(hwnd) };
 
@@ -150,32 +203,6 @@ unsafe extern "system" fn windows_proc(
                 null(),
             );
             EDIT_CONTROL.store(edit, Ordering::Release);
-
-            // Attempt to set the font to Consolas
-            let font = CreateFontW(
-                16,
-                0,
-                0,
-                0,
-                FW_DONTCARE as i32,
-                false as u32,
-                false as u32,
-                false as u32,
-                ANSI_CHARSET as u32,
-                OUT_TT_PRECIS as u32,
-                CLIP_DEFAULT_PRECIS as u32,
-                DEFAULT_QUALITY as u32,
-                (DEFAULT_PITCH | FF_DONTCARE) as u32,
-                w!("Consolas"),
-            );
-            SendMessageW(edit, WM_SETFONT, font as usize, TRUE as isize);
-
-            // Set the tab stop to four spaces
-            let mut size = mem::zeroed();
-            let dc = GetDC(edit);
-            GetTextExtentPoint32W(dc, w!("    "), 4, &mut size);
-            ReleaseDC(edit, dc);
-            SendMessageW(edit, EM_SETTABSTOPS, 1, addr_of!(size.cx) as isize);
         },
         WM_SETFOCUS => unsafe {
             SetFocus(EDIT_CONTROL.load(Ordering::Acquire));
@@ -192,7 +219,11 @@ unsafe extern "system" fn windows_proc(
             );
             let mut rect = mem::zeroed();
             GetClientRect(edit, &mut rect);
-            InflateRect(&mut rect, -16, -16);
+            let dpi = f64::from(GetDpiForWindow(hwnd));
+            let dpi_scale = dpi / f64::from(USER_DEFAULT_SCREEN_DPI);
+
+            let padding = ((-16_f64) * dpi_scale) as i32;
+            InflateRect(&mut rect, padding, padding);
             SendMessageW(edit, EM_SETRECT, 0, addr_of!(rect) as isize);
         },
         WM_CLOSE => {
